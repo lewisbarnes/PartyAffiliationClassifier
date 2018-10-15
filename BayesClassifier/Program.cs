@@ -24,7 +24,7 @@ namespace BayesClassifier
             Dictionary<Category, List<Word>> partyWords = new Dictionary<Category,List<Word>>();
             foreach (Category c in Enum.GetValues(typeof(Category)))
             {
-                partyWordFrequencies[c] = DictionaryHelper.MergeDictionaries(trainingSet.Where(s => s.Category == Category.CONSERVATIVE).Select(w => w.WordFrequencies).ToArray());
+                partyWordFrequencies[c] = DictionaryHelper.MergeDictionaries(trainingSet.Where(s => s.Category == c).Select(w => w.WordFrequencies).ToArray());
             }
             foreach(Category c in Enum.GetValues(typeof(Category)))
             {
