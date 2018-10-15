@@ -13,10 +13,10 @@ namespace BayesClassifier
         {
         }
 
-        public string RemovePunctuation(ref string input)
+        public string RemovePunctuation(ref string inputString)
         {
-            var sb = new StringBuilder(input.ToLower());
-            var reader = new StringReader(input.ToLower());
+            var sb = new StringBuilder(inputString.ToLower());
+            var reader = new StringReader(inputString.ToLower());
             int charPos = 0;
             int charsRead;
             while((charsRead = reader.Peek()) != -1)

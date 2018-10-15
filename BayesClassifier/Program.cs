@@ -2,17 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.IO;
 
 namespace BayesClassifier
 {
+    // Conditional Probabilities: P(word/cata) = (fcata[word]) + 1) / (Ncata + Nwords)
+    // Overall Probability: P(cata) = Tcata / Tdocs ... P(catn) = Tcatn / Tdocs
+    // 
     class Program
     {
         static void Main(string[] args)
         {
             Console.OutputEncoding = Encoding.UTF8;
-            // Read speech from file.
             TrainingDoc[] trainingSet = {
                 new TrainingDoc("Coalition9thMay2012.txt", Category.COALITION),
                 new TrainingDoc("Conservative16thNov1994.txt", Category.CONSERVATIVE),
@@ -20,28 +20,23 @@ namespace BayesClassifier
                 new TrainingDoc("Labour6thNov2007.txt", Category.LABOUR),
                 new TrainingDoc("Labour26thNov2003.txt", Category.LABOUR)};
 
-            var ProbCoalition = (double)trainingSet.Where(d => d.Category == Category.COALITION).Count() / (double)trainingSet.Count();
-            var ProbConservative = (double)trainingSet.Where(d => d.Category == Category.CONSERVATIVE).Count() / (double)trainingSet.Count();
-            var ProbLabour = (double)trainingSet.Where(d => d.Category == Category.LABOUR).Count() / (double)trainingSet.Count();
-            var result = trainingSet[1].WordFrequencies.Union(trainingSet[2].WordFrequencies);
-            foreach (var t in trainingSet)
+            Dictionary<Category, Dictionary<string, int>> partyWordFrequencies = new Dictionary<Category,Dictionary<string, int>>();
+            Dictionary<Category, List<Word>> partyWords = new Dictionary<Category,List<Word>>();
+            foreach (Category c in Enum.GetValues(typeof(Category)))
             {
-                Console.WriteLine($"{t.FileName} - {t.Words.Count()} words - {t.WordFrequencies.Count()} unique - {t.Category}");
-                foreach (var kvp in t.WordFrequencies)
+                partyWordFrequencies[c] = DictionaryHelper.MergeDictionaries(trainingSet.Where(s => s.Category == Category.CONSERVATIVE).Select(w => w.WordFrequencies).ToArray());
+            }
+            foreach(Category c in Enum.GetValues(typeof(Category)))
+            {
+                if(!partyWords.TryGetValue(c, out List<Word> value))
                 {
-                    Console.WriteLine($"{{{kvp.Key} : {kvp.Value} : {t.WordProbabilities[kvp.Key] * 100:f2}%}}");
+                    partyWords[c] = new List<Word>();
                 }
-                Console.WriteLine();
+                foreach(var pair in partyWordFrequencies[c])
+                {
+                    partyWords[c].Add(new Word(pair.Key, pair.Value, (double)(pair.Value + 1) / ((double)partyWordFrequencies[c].Values.Sum() + (double)partyWordFrequencies[c].Keys.Count)));
+                }
             }
-            var conservativeDicts = trainingSet.Where(s => s.Category == Category.CONSERVATIVE).Select(c => c.WordFrequencies).ToArray();
-            var newDict = DictionaryHelper.MergeDictionaries(conservativeDicts);
-            foreach (var kvp in newDict)
-            {
-                Console.WriteLine($"{{{kvp.Key} : {kvp.Value}");
-            }
-            Console.WriteLine(ProbCoalition);
-            Console.WriteLine(ProbConservative);
-            Console.WriteLine(ProbLabour);
             Console.ReadKey();
         }
     }

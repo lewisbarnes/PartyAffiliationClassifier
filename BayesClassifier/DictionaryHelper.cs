@@ -8,13 +8,13 @@ namespace BayesClassifier
 {
     public static class DictionaryHelper 
     {
-        public static Dictionary<string,int> MergeDictionaries(params Dictionary<string,int>[] dicts)
+        public static Dictionary<string,int> MergeDictionaries(params Dictionary<string,int>[] dictionaries)
         {
-            return dicts
+            return dictionaries
               .SelectMany(d => d)
               .GroupBy(
-                kvp => kvp.Key,
-                (key, kvps) => new { Key = key, Value = kvps.Sum(kvp => kvp.Value) })
+                pair => pair.Key,
+                (key, pairs) => new { Key = key, Value = pairs.Sum(pair => pair.Value) })
               .ToDictionary(x => x.Key, x => x.Value);
         }
     }
