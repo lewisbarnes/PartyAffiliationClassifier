@@ -13,13 +13,9 @@ namespace PartyAffiliationClassifier
         static void Main(string[] args)
         {
             Console.OutputEncoding = Encoding.UTF8;
-            var trainingSet = TrainingDoc.GetTrainingDocs();
-            PartyClassifier p = new PartyClassifier();
-            p.GetBaseProbabilities(trainingSet);
-            Console.WriteLine(p.ClassifyUnknown(new Doc("unknownLabour2.txt")));
+            
             var uim = new UserInteractionMenu();
             uim.Go();
-            Console.ReadKey();
         }
     }
 }

@@ -10,6 +10,7 @@ namespace PartyAffiliationClassifier
     public class UserInteractionMenu
     {
         public Dictionary<int, string> UnknownDocPairs;
+        PartyClassifier p;
         public UserInteractionMenu()
         {
             var docs = Directory.GetFiles("UnknownDocs");
@@ -18,21 +19,30 @@ namespace PartyAffiliationClassifier
             {
                 UnknownDocPairs[i + 1] = docs[i].Replace("UnknownDocs\\", "");
             }
+            p = new PartyClassifier();
+            p.GetBaseProbabilities(TrainingDoc.GetTrainingDocs());
         }
         
         public void Go()
         {
-            foreach(var pair in UnknownDocPairs)
+            var trainingSet = TrainingDoc.GetTrainingDocs();
+            do
             {
-                Console.WriteLine($"{pair.Key}. {pair.Value}");
-            }
+                Console.Clear();
+                foreach (var pair in UnknownDocPairs)
+                {
+                    Console.WriteLine($"{pair.Key}. {pair.Value}");
+                }
 
-            Console.Write("Choose a document by entering its number: ");
-            var choice = Console.ReadLine();
-            if(UnknownDocPairs.TryGetValue(Convert.ToInt32(choice), out string value))
-            {
-                Console.WriteLine($"TrainingDocs\\{value}");
-            }
+                Console.Write("Choose a document by entering its number: ");
+                var choice = Console.ReadLine();
+                if (UnknownDocPairs.TryGetValue(Convert.ToInt32(choice), out string value))
+                {
+                    Console.WriteLine(p.ClassifyUnknown(new Doc($"UnknownDocs\\{value}")));
+                }
+                Console.ReadLine();
+            } while (true);
+
         }
     }
 }
