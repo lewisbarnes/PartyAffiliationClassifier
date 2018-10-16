@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BayesClassifier
 {
-    public class Word
+    public struct Word
     {
         public string Key { get; set; }
         public int Frequency { get; set; }
