@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace BayesClassifier
+namespace PartyAffiliationClassifier
 {
     // Conditional Probabilities: P(word/cata) = (fcata[word]) + 1) / (Ncata + Nwords)
     // Overall Probability: P(cata) = Tcata / Tdocs ... P(catn) = Tcatn / Tdocs
@@ -17,6 +17,8 @@ namespace BayesClassifier
             PartyClassifier p = new PartyClassifier();
             p.GetBaseProbabilities(trainingSet);
             Console.WriteLine(p.ClassifyUnknown(new Doc("unknownLabour2.txt")));
+            var uim = new UserInteractionMenu();
+            uim.Go();
             Console.ReadKey();
         }
     }

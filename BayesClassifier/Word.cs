@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BayesClassifier
+namespace PartyAffiliationClassifier
 {
     public struct Word
     {

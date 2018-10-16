@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace BayesClassifier
+namespace PartyAffiliationClassifier
 {
     public class TrainingDoc : Doc
     {
