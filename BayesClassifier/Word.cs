@@ -8,19 +8,35 @@ using System.Xml.Serialization;
 namespace PartyAffiliationClassifier
 {
     [Serializable]
-    public struct Word
+    public class Word
     {
-        [XmlAttribute]
         public string Key { get; set; }
-        [XmlAttribute]
         public int Frequency { get; set; }
-        [XmlAttribute]
         public double ConditionalProbability { get; set; }
+
         public Word(string key, int frequency, double conditionalProbability)
         {
             Key = key;
             Frequency = frequency;
             ConditionalProbability = conditionalProbability;
+        }
+        public Word(string key)
+        {
+            Key = key;
+        }
+        public Word()
+        {
+
+        }
+
+        public void SetFrequency(int freq)
+        {
+            Frequency = freq;
+        }
+
+        public void SetProbability(double prob)
+        {
+            ConditionalProbability = prob;
         }
     }
 }

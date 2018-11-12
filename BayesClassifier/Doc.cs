@@ -11,15 +11,17 @@ namespace PartyAffiliationClassifier
     [Serializable]
     public class Doc
     {
-        public string FileName;
-        public static List<string> stopWords;
-        public List<string> Words;
-        public Dictionary<string, int> WordFrequencies;
-        public Dictionary<string, double> WordProbabilities;
+        
+        public string FileName { get; set; }
+        public static List<string> stopWords { get; set; }
+        public List<Word> Words { get; set; }
+        public int wordCount { get; set; }
+        private static Calculator calculator = new Calculator();
         public Doc()
         {
 
         }
+
         public Doc(string fileName)
 
         {
@@ -29,42 +31,22 @@ namespace PartyAffiliationClassifier
             }
             FileName = fileName;
 
-            Words = new List<string>();
-            WordFrequencies = new Dictionary<string, int>();
-            WordProbabilities = new Dictionary<string, double>();
+            Words = new List<Word>();
 
             var wordString = new string(File.ReadAllText(FileName).ToCharArray());
             var sc = new StringScanner();
-            wordString = sc.RemovePunctuation(ref wordString);
+            sc.RemovePunctuation(ref wordString);
             wordString = wordString.Replace("\0", string.Empty);
             foreach (string word in wordString.Split(' '))
             {
                 if (word != string.Empty)
                 {
-                    if (!stopWords.Any(s => s == word)) Words.Add(word);
+                    if (!stopWords.Any(s => s == word)) Words.Add(new Word(word));
                 }
             }
-            GetWordFrequencies(Words);
-            foreach (var kvp in WordFrequencies)
-            {
-                WordProbabilities[kvp.Key] = kvp.Value / Words.Count();
-            }
-            WordFrequencies = WordFrequencies.OrderByDescending(kvp => kvp.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        }
-
-        private void GetWordFrequencies(List<string> words)
-        {
-            foreach (string word in Words)
-            {
-                if (WordFrequencies.TryGetValue(word, out int freq))
-                {
-                    WordFrequencies[word] = freq + 1;
-                }
-                else
-                {
-                    WordFrequencies[word] = 1;
-                }
-            }
+            wordCount = Words.Count();
+            Words = calculator.GetWordFrequencies(Words);
+            Words = calculator.GetWordProbabilities(Words, wordCount);
         }
 
         private static void AddStopWords()

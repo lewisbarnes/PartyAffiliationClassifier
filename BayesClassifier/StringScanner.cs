@@ -41,7 +41,7 @@ namespace PartyAffiliationClassifier
                 }
                 charPos++; //Increment the char position counter
             }
-            return sb.ToString(); // Return the StringBuilder.ToString();
+            return inputString = sb.ToString(); // Return the StringBuilder.ToString();
         }
     }
 }

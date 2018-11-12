@@ -5,23 +5,27 @@ using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace PartyAffiliationClassifier
 {
     [Serializable]
     public class Network
     {
-        public Dictionary<Category, Dictionary<string, int>> WordFrequencies;
-        public Dictionary<Category, List<Word>> Words;
-        public Dictionary<Category, double> PriorProbs;
-        public List<TrainingDoc> TrainingDocs;
+        public List<PartyData> Data { get; set; }
+        public List<TrainingDoc> TrainingDocs { get; set; }
+        [NonSerialized]
+        private Calculator calculator = new Calculator();
+        public Network(int isnew)
+        {
+            Data = new List<PartyData>() { new ConservativeData(), new CoalitionData(), new LabourData() };
+            TrainingDocs = new List<TrainingDoc>();
+        }
 
         public Network()
         {
-            PriorProbs = new Dictionary<Category, double>();
-            Words = new Dictionary<Category, List<Word>>();
-            WordFrequencies = new Dictionary<Category, Dictionary<string, int>>();
-            TrainingDocs = new List<TrainingDoc>();
+
         }
 
         /// <summary>
@@ -30,52 +34,47 @@ namespace PartyAffiliationClassifier
         /// <returns>Training network</returns>
         public static Network GetNetwork()
         {
-            Network network;
-            if (!Directory.GetFiles(Directory.GetCurrentDirectory()).Contains(Directory.GetCurrentDirectory() + "\\trainingNetwork"))
+            Network network = new Network();
+            if (!Directory.GetFiles(Directory.GetCurrentDirectory()).Contains(Directory.GetCurrentDirectory() + @"\trainingNetwork.xml"))
             {
-                network = new Network();
-                using (Stream stream = File.Open(Directory.GetCurrentDirectory() + "\\trainingNetwork.nwk", FileMode.Create))
+                network = new Network(1);
+                using (Stream stream = File.Open(Directory.GetCurrentDirectory() + @"\trainingNetwork.xml", FileMode.Create))
                 {
-                    var binaryFormatter = new BinaryFormatter();
-                    binaryFormatter.Serialize(stream, network);
+                    XmlSerializer serializer = new XmlSerializer(typeof(Network));
+                    serializer.Serialize(stream, network);
                 }
             }
             else
             {
-                using (Stream stream = File.Open(Directory.GetCurrentDirectory() + "\\trainingNetwork.nwk", FileMode.Open))
+                using (Stream stream = File.Open(Directory.GetCurrentDirectory() + @"\trainingNetwork.xml", FileMode.Open))
                 {
-                    network = new Network();
-                    var binaryFormatter = new BinaryFormatter();
-                    network = (Network)binaryFormatter.Deserialize(stream);
+                    XmlSerializer serializer = new XmlSerializer(typeof(Network));
+                    network = (Network)serializer.Deserialize(stream);
                 }
             }
             return network;
         }
 
+        /// <summary>
+        /// Add a training document to the network
+        /// </summary>
+        /// <param name="trainingDoc">The training doc to add to the network</param>
         public void AddTrainingDoc(TrainingDoc trainingDoc)
         {
             TrainingDocs.Add(trainingDoc);
-            var cat = trainingDoc.Category;
-            if (!WordFrequencies.TryGetValue(cat, out Dictionary<string, int> value))
+            Category cat = trainingDoc.Category;
+            PartyData partyData = Data.Where(x => x.GetCategory() == cat).First();
+            Dictionary<Category, double> priorProbabilities = calculator.GetPriorProbabilities(TrainingDocs);
+            foreach (KeyValuePair<Category, double> kvp in priorProbabilities)
             {
-                WordFrequencies[cat] = trainingDoc.WordFrequencies;
+                if (kvp.Key != Category.NONE)
+                {
+                    var party = Data.Where(x => x.GetCategory() == kvp.Key).First();
+                    party.SetProbability(kvp.Value);
+                }
             }
-            else
-            {
-                WordFrequencies[cat] = MergeDictionaries(trainingDoc.WordFrequencies, WordFrequencies[cat]);
-            }
-            foreach (Category c in Enum.GetValues(typeof(Category)))
-            {
-                PriorProbs[c] = (double)TrainingDocs.Where(d => d.Category == c).Count() / (double)TrainingDocs.Count();
-            }
-            if (!Words.TryGetValue(cat, out List<Word> value1))
-            {
-                Words[cat] = new List<Word>();
-            }
-            foreach (var pair in WordFrequencies[cat])
-            {
-                Words[cat].Add(new Word(pair.Key, pair.Value, (double)(pair.Value + 1) / ((double)WordFrequencies[cat].Values.Sum() + (double)WordFrequencies[cat].Keys.Count)));
-            }
+            partyData.SetWords(MergeWords(partyData.Words, trainingDoc.Words));
+            calculator.GetWordProbabilities(partyData.Words, partyData.Words.Count);
             Save();
         }
 
@@ -84,10 +83,10 @@ namespace PartyAffiliationClassifier
         /// </summary>
         private void Save()
         {
-            using (Stream stream = File.Open(Directory.GetCurrentDirectory() + "\\trainingNetwork.nwk", FileMode.Create))
+            using (Stream stream = File.Open(Directory.GetCurrentDirectory() + "\\trainingNetwork.xml", FileMode.Create))
             {
-                var binaryFormatter = new BinaryFormatter();
-                binaryFormatter.Serialize(stream, this);
+                XmlSerializer serializer = new XmlSerializer(typeof(Network));
+                serializer.Serialize(stream, this);
             }
         }
         /// <summary>
@@ -95,46 +94,55 @@ namespace PartyAffiliationClassifier
         /// </summary>
         /// <param name="doc">The unknown document to classify</param>
         /// <returns>Category of document based on prior knowledge</returns>
-        public Category ClassifyUnknown(Doc doc)
+        public Tuple<Category, double> ClassifyUnknownDocument(Doc doc)
         {
             var overallProbs = new Dictionary<Category, double>();
-            foreach (Category c in Enum.GetValues(typeof(Category)))
+            foreach (PartyData p in Data)
             {
                 foreach (var word in doc.Words)
                 {
-                    if (Words.TryGetValue(c, out List<Word> words))
+                    var match = p.Words.Where(x => x.Key == word.Key).FirstOrDefault();
+                    if (match != null)
                     {
-                        var wordMatch = words.FirstOrDefault(w => w.Key == word);
-                        if (wordMatch.Key != null)
+                        if (overallProbs.TryGetValue(p.GetCategory(), out double prob))
                         {
-                            if (overallProbs.TryGetValue(c, out double prob))
-                            {
-                                overallProbs[c] = prob + Math.Log(wordMatch.ConditionalProbability);
-                            }
-                            else
-                            {
-                                overallProbs[c] = Math.Log(wordMatch.ConditionalProbability);
-                            }
+                            overallProbs[p.GetCategory()] = prob + Math.Log(match.ConditionalProbability);
                         }
-                        overallProbs[c] = overallProbs[c] + Math.Log(PriorProbs[c]);
+                        else
+                        {
+                            overallProbs[p.GetCategory()] = Math.Log(match.ConditionalProbability);
+                        }
                     }
                 }
+                overallProbs[p.GetCategory()] += Math.Log(p.Probability);
             }
-            return overallProbs.OrderBy(p => p.Value).First().Key;
+            var percent = ((overallProbs.OrderBy(p => p.Value).First().Value * -1) / overallProbs.Sum(x => x.Value) * -1) * 100;
+            return new Tuple<Category, double>(overallProbs.OrderBy(p => p.Value).First().Key, percent);
         }
-        /// <summary>
-        /// Merge two dictionaries together summing the values for each key
-        /// </summary>
-        /// <param name="dictionaries">The dictionaries that are to be merged</param>
-        /// <returns>Merged dictionary of specified input dictionaries</returns>
-        private Dictionary<string, int> MergeDictionaries(params Dictionary<string, int>[] dictionaries)
+
+        private List<Word> MergeWords(List<Word> words1, List<Word> words2)
         {
-            return dictionaries
-              .SelectMany(d => d)
-              .GroupBy(
-                pair => pair.Key,
-                (key, pairs) => new { Key = key, Value = pairs.Sum(pair => pair.Value) })
-              .ToDictionary(x => x.Key, x => x.Value);
+            if(words1 == null)
+            {
+                return words2;
+            }
+            else if(words2 == null)
+            {
+                return words1;
+            }
+            List<Word> concatWords = words1.Concat(words2).ToList();
+            List<Word> returnWords = new List<Word>();
+            var groups = concatWords.GroupBy(x => x.Key).ToList();
+            foreach (var group in groups)
+            {
+                var first = group.FirstOrDefault();
+                first.Frequency = group.Sum(x => x.Frequency);
+                returnWords.Add(first);
+            }
+            return returnWords;
+
         }
+
     }
 }
+

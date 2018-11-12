@@ -45,18 +45,28 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Calculator.cs" />
+    <Compile Include="CoalitionData.cs" />
+    <Compile Include="ConservativeData.cs" />
     <Compile Include="Doc.cs" />
+    <Compile Include="LabourData.cs" />
     <Compile Include="Network.cs" />
+    <Compile Include="PartyData.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StringScanner.cs" />
     <Compile Include="TrainingDoc.cs" />
     <Compile Include="UserInteractionMenu.cs" />
     <Compile Include="Word.cs" />
+    <Compile Include="WordStemmer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Scripts\MicrosoftAjax.debug.js" />
+    <Content Include="Scripts\MicrosoftAjax.js" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

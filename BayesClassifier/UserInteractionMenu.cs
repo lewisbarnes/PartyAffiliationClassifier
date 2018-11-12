@@ -22,24 +22,20 @@ namespace PartyAffiliationClassifier
             do
             {
                 Console.Clear();
-                Console.WriteLine("Party Affiliation Classifier\n");
-                Console.WriteLine("Choose an option from the menu below\n");
-                Console.WriteLine("1. Train");
-                Console.WriteLine("2. Classify");
-                Console.WriteLine("3. Exit");
-                Console.Write("\nEnter number of option: ");
-                var option = Convert.ToInt32(Console.ReadLine());
+                Console.WriteLine("Party Affiliation Classifier\n\nChoose an option from the menu below\n\n1. Train\n2. Classify\n3. Exit\n\nEnter number of option: ");
+                Console.Write(">");
+                var option = Console.ReadLine()[0];
                 switch (option)
                 {
-                    case 1:
+                    case '1':
                         validInput = true;
                         Train();
                         break;
-                    case 2:
+                    case '2':
                         validInput = true;
                         Classify();
                         break;
-                    case 3:
+                    case '3':
                         validInput = true;
                         Console.Clear();
                         Console.Write("Exiting");
@@ -67,21 +63,27 @@ namespace PartyAffiliationClassifier
                 Console.WriteLine("Choose a document to train the network with\n");
                 
                 var docs = Directory.GetFiles("TrainingDocs");
+
                 var trainingDocPairs = new Dictionary<int, string>();
                 var trainingDocPairDisplay = new Dictionary<int, string>();
+
                 for (int i = 0; i < docs.Count(); i++)
                 {
                     trainingDocPairs[i + 1] = docs[i];
                     trainingDocPairDisplay[i + 1] = docs[i].Replace("TrainingDocs\\", "");
                 }
+
                 foreach (var pair in trainingDocPairDisplay)
                 {
                     Console.WriteLine($"{pair.Key}. {pair.Value}");
                 }
+
                 var choiceInput = Console.ReadLine();
+
                 try
                 {
                     var choice = Convert.ToInt32(choiceInput);
+
                     if (trainingDocPairs.TryGetValue(choice, out string value))
                     {
                         validInput = true;
@@ -95,14 +97,16 @@ namespace PartyAffiliationClassifier
                 }
                 catch (FormatException e)
                 {
-                    Console.WriteLine("Invalid input! Try a number instead");
+                    Console.WriteLine(e.Message + " Try a number instead!" );
                     Console.ReadLine();
                 }
             } while (!validInput);
 
             network.AddTrainingDoc(t);
+
             Console.WriteLine("Trained Network with \"{0}\"", t.FileName);
             Console.ReadLine();
+
             Start();
 
         }
@@ -112,15 +116,18 @@ namespace PartyAffiliationClassifier
             if (network.TrainingDocs.Count == 0)
             {
                 Console.WriteLine("Cannot classify document without training data, must train network first");
-                System.Threading.Thread.Sleep(1000);
+
                 Start();
             }
+
             var docs = Directory.GetFiles("UnknownDocs");
             var unknownDocPairs = new Dictionary<int, string>();
+
             for (int i = 0; i < docs.Count(); i++)
             {
                 unknownDocPairs[i + 1] = docs[i].Replace("UnknownDocs\\", "");
             }
+
             do
             {
                 Console.Clear();
@@ -131,11 +138,27 @@ namespace PartyAffiliationClassifier
 
                 Console.Write("\nChoose a document by entering its number: ");
                 var choice = Console.ReadLine();
-                if (unknownDocPairs.TryGetValue(Convert.ToInt32(choice), out string value))
+
+                int menuChoice;
+
+                try
                 {
-                    Console.WriteLine(network.ClassifyUnknown(new Doc($"UnknownDocs\\{value}")));
+                    menuChoice = Convert.ToInt32(choice);
+
+                    if(unknownDocPairs.TryGetValue(menuChoice, out string value))
+                    {
+                        var result = network.ClassifyUnknownDocument(new Doc($"UnknownDocs\\{value}"));
+                        Console.WriteLine($"Classified as {result.Item1} with {Math.Round(result.Item2, 2)}% probability");
+                    }
                 }
+                catch(FormatException e)
+                {
+                    Console.WriteLine(e.Message + " Try a number instead!");
+                    Console.ReadLine();
+                }
+
                 Console.ReadLine();
+
             } while (true);
         }
 
@@ -147,12 +170,7 @@ namespace PartyAffiliationClassifier
             do
             {
                 Console.WriteLine("Choose the party this document belongs to\n");
-                var cats = Enum.GetValues(typeof(Category));
-                var categoryPairs = new Dictionary<int, string>();
-                for (int i = 0; i < cats.Length; i++)
-                {
-                    categoryPairs[i+1] = cats.GetValue(i).ToString();
-                }
+                var categoryPairs = new Dictionary<int, Category>() { { 1, Category.CONSERVATIVE }, { 2, Category.COALITION }, { 3, Category.LABOUR } };
                 foreach (var pair in categoryPairs)
                 {
                     Console.WriteLine($"{pair.Key}. {pair.Value}");
@@ -166,19 +184,17 @@ namespace PartyAffiliationClassifier
                         validInput = true;
                         break;
                     case '2':
-                        t = new TrainingDoc(fileName, Category.LABOUR);
-                        validInput = true;
-
-                        break;
-                    case '3':
                         t = new TrainingDoc(fileName, Category.COALITION);
                         validInput = true;
 
                         break;
+                    case '3':
+                        t = new TrainingDoc(fileName, Category.LABOUR);
+                        validInput = true;
+                        break;
                     default:
                         Console.WriteLine("Invalid Input!");
                         break;
-
                 }
             } while (!validInput);
             return t;

@@ -32,7 +32,8 @@ namespace PartyAffiliationClassifier
     {
         CONSERVATIVE,
         COALITION,
-        LABOUR
+        LABOUR,
+        NONE
     }
 
 }
