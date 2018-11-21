@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Serialization;
 
 namespace PartyAffiliationClassifier
@@ -15,6 +12,8 @@ namespace PartyAffiliationClassifier
     {
         public List<Word> Words { get; set; }
         public double Probability { get; set; }
+
+        public int DocCount { get; set; }
         public virtual Category GetCategory()
         {
             return Category.NONE;

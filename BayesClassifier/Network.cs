@@ -2,10 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
 using System.Xml.Serialization;
 
 namespace PartyAffiliationClassifier
@@ -14,15 +10,18 @@ namespace PartyAffiliationClassifier
     public class Network
     {
         public List<PartyData> Data { get; set; }
-        public List<TrainingDoc> TrainingDocs { get; set; }
+
+        public int TotalDocs { get { return Data.Sum(x => x.DocCount); } }
         [NonSerialized]
         private Calculator calculator = new Calculator();
         public Network(int isnew)
         {
             Data = new List<PartyData>() { new ConservativeData(), new CoalitionData(), new LabourData() };
-            TrainingDocs = new List<TrainingDoc>();
         }
-
+        private bool NetworkExists()
+        {
+            return Directory.GetFiles(Directory.GetCurrentDirectory()).Contains(Directory.GetCurrentDirectory()+@"\trainingNetwork.xml");
+        }
         public Network()
         {
 
@@ -32,10 +31,10 @@ namespace PartyAffiliationClassifier
         /// Get the training network saved to file or create a new one if not available
         /// </summary>
         /// <returns>Training network</returns>
-        public static Network GetNetwork()
+        public Network GetNetwork()
         {
             Network network = new Network();
-            if (!Directory.GetFiles(Directory.GetCurrentDirectory()).Contains(Directory.GetCurrentDirectory() + @"\trainingNetwork.xml"))
+            if (!NetworkExists())
             {
                 network = new Network(1);
                 using (Stream stream = File.Open(Directory.GetCurrentDirectory() + @"\trainingNetwork.xml", FileMode.Create))
@@ -61,20 +60,20 @@ namespace PartyAffiliationClassifier
         /// <param name="trainingDoc">The training doc to add to the network</param>
         public void AddTrainingDoc(TrainingDoc trainingDoc)
         {
-            TrainingDocs.Add(trainingDoc);
             Category cat = trainingDoc.Category;
             PartyData partyData = Data.Where(x => x.GetCategory() == cat).First();
-            Dictionary<Category, double> priorProbabilities = calculator.GetPriorProbabilities(TrainingDocs);
+            partyData.DocCount++;
+            Dictionary<Category, double> priorProbabilities = calculator.GetPriorProbabilities(Data);
             foreach (KeyValuePair<Category, double> kvp in priorProbabilities)
             {
                 if (kvp.Key != Category.NONE)
                 {
-                    var party = Data.Where(x => x.GetCategory() == kvp.Key).First();
+                    PartyData party = Data.Where(x => x.GetCategory() == kvp.Key).FirstOrDefault();
                     party.SetProbability(kvp.Value);
                 }
             }
             partyData.SetWords(MergeWords(partyData.Words, trainingDoc.Words));
-            calculator.GetWordProbabilities(partyData.Words, partyData.Words.Count);
+            calculator.GetRelativeFrequencies(partyData.Words);
             Save();
         }
 
@@ -94,53 +93,58 @@ namespace PartyAffiliationClassifier
         /// </summary>
         /// <param name="doc">The unknown document to classify</param>
         /// <returns>Category of document based on prior knowledge</returns>
-        public Tuple<Category, double> ClassifyUnknownDocument(Doc doc)
+        public ClassificationResults ClassifyUnknownDocument(Doc doc)
         {
-            var overallProbs = new Dictionary<Category, double>();
+            Dictionary<Category, double> overallProbs = new Dictionary<Category, double>();
             foreach (PartyData p in Data)
             {
-                foreach (var word in doc.Words)
+                foreach (Word word in doc.Words)
                 {
-                    var match = p.Words.Where(x => x.Key == word.Key).FirstOrDefault();
+                    Word match = p.Words.Where(x => x.Key == word.Key).FirstOrDefault();
                     if (match != null)
                     {
                         if (overallProbs.TryGetValue(p.GetCategory(), out double prob))
                         {
-                            overallProbs[p.GetCategory()] = prob + Math.Log(match.ConditionalProbability);
+                            overallProbs[p.GetCategory()] = prob + Math.Log(match.RelativeFrequency);
                         }
                         else
                         {
-                            overallProbs[p.GetCategory()] = Math.Log(match.ConditionalProbability);
+                            overallProbs[p.GetCategory()] = Math.Log(match.RelativeFrequency);
+                            overallProbs[p.GetCategory()] += Math.Log(p.Probability);
                         }
                     }
                 }
-                overallProbs[p.GetCategory()] += Math.Log(p.Probability);
             }
-            var percent = ((overallProbs.OrderBy(p => p.Value).First().Value * -1) / overallProbs.Sum(x => x.Value) * -1) * 100;
-            return new Tuple<Category, double>(overallProbs.OrderBy(p => p.Value).First().Key, percent);
+            ClassificationResults results = new ClassificationResults();
+            results.SetConservativePercentage(((overallProbs.Where(x => x.Key == Category.CONSERVATIVE).FirstOrDefault().Value * -1) / overallProbs.Sum(x => x.Value) * -1) * 100);
+            results.SetCoalitionPercentage(((overallProbs.Where(x => x.Key == Category.COALITION).FirstOrDefault().Value * -1) / overallProbs.Sum(x => x.Value) * -1) * 100);
+            results.SetLabourPercentage(((overallProbs.Where(x => x.Key == Category.LABOUR).FirstOrDefault().Value * -1) / overallProbs.Sum(x => x.Value) * -1) * 100);
+            return results;
         }
 
+        /// <summary>
+        /// Merge two lists of words together summing the frequency on same keys
+        /// </summary>
+        /// <param name="words1"></param>
+        /// <param name="words2"></param>
+        /// <returns></returns>
         private List<Word> MergeWords(List<Word> words1, List<Word> words2)
         {
-            if(words1 == null)
-            {
-                return words2;
-            }
-            else if(words2 == null)
-            {
-                return words1;
-            }
+            if (words1 == null) return words2;
+            else if (words2 == null) return words1;
+
             List<Word> concatWords = words1.Concat(words2).ToList();
             List<Word> returnWords = new List<Word>();
-            var groups = concatWords.GroupBy(x => x.Key).ToList();
-            foreach (var group in groups)
+            List<IGrouping<string, Word>> groups = concatWords.GroupBy(x => x.Key).ToList();
+
+            foreach (IGrouping<string, Word> group in groups)
             {
-                var first = group.FirstOrDefault();
-                first.Frequency = group.Sum(x => x.Frequency);
+                Word first = group.FirstOrDefault();
+                first.SetFrequency(group.Sum(x => x.Frequency));
                 returnWords.Add(first);
             }
-            return returnWords;
 
+            return returnWords;
         }
 
     }

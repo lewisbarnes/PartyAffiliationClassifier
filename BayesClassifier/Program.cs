@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace PartyAffiliationClassifier
 {
@@ -11,7 +7,8 @@ namespace PartyAffiliationClassifier
         static void Main(string[] args)
         {
             Console.Title = "Party Affiliation Classifier";
-            // Instantiate new UserInteractionMenu object and Start
+            Console.CursorVisible = false;
+            //Instantiate new UserInteractionMenu object and Start
             new UserInteractionHandler().Start();
         }
     }

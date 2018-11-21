@@ -26,7 +26,7 @@ namespace PartyAffiliationClassifier
                     wordFrequencies[word.Key] = 1;
                 }
             }
-            foreach (var kvp in wordFrequencies)
+            foreach (KeyValuePair<string, int> kvp in wordFrequencies)
             {
                 Word word = wordList.Where(x => x.Key == kvp.Key).First();
                 word.SetFrequency(kvp.Value);
@@ -34,26 +34,26 @@ namespace PartyAffiliationClassifier
             return wordList;
         }
 
-        public List<Word> GetWordProbabilities(List<Word> words, int wordCount)
+        public List<Word> GetRelativeFrequencies(List<Word> words)
 
         {
             List<Word> returnWords = new List<Word>();
             foreach (Word word in words)
             {
-                var newWord = new Word(word.Key, word.Frequency, (double)word.Frequency / (double)wordCount);
+                Word newWord = new Word(word.Key, word.Frequency, (double)word.Frequency / words.Count);
                 returnWords.Add(newWord);
             }
             return returnWords;
         }
 
-        public Dictionary<Category, double> GetPriorProbabilities(List<TrainingDoc> tdocs)
+        public Dictionary<Category, double> GetPriorProbabilities(List<PartyData> data)
         {
-            Dictionary<Category,double> probabilities = new Dictionary<Category, double>();
-            foreach(Category cat in Enum.GetValues(typeof(Category)))
+            Dictionary<Category, double> probabilities = new Dictionary<Category, double>();
+            foreach (Category cat in Enum.GetValues(typeof(Category)))
             {
-                if(cat != Category.NONE)
+                if (cat != Category.NONE)
                 {
-                    probabilities[cat] = (double)(tdocs.Where(x => x.Category == cat).Count() / (double)tdocs.Count());
+                    probabilities[cat] = (double)data.Where(x => x.GetCategory() == cat).FirstOrDefault().DocCount / (double)data.Sum(x => x.DocCount);
                 }
             }
             return probabilities;

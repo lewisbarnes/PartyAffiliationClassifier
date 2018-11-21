@@ -11,11 +11,11 @@ namespace PartyAffiliationClassifier
     [Serializable]
     public class Doc
     {
-        
-        public string FileName { get; set; }
-        public static List<string> stopWords { get; set; }
+        private static WordStemmer ws = new WordStemmer();
+        private string fileName;
+        public string FileName { get { return fileName; } private set { } }
+        private static List<string> stopWords { get; set; }
         public List<Word> Words { get; set; }
-        public int wordCount { get; set; }
         private static Calculator calculator = new Calculator();
         public Doc()
         {
@@ -23,30 +23,30 @@ namespace PartyAffiliationClassifier
         }
 
         public Doc(string fileName)
-
         {
-            if(stopWords == null)
+            if (stopWords == null)
             {
                 AddStopWords();
             }
-            FileName = fileName;
+            this.fileName = fileName;
 
             Words = new List<Word>();
 
-            var wordString = new string(File.ReadAllText(FileName).ToCharArray());
-            var sc = new StringScanner();
+            string wordString = new string(File.ReadAllText(FileName).ToCharArray());
+
+            StringScanner sc = new StringScanner();
             sc.RemovePunctuation(ref wordString);
+
             wordString = wordString.Replace("\0", string.Empty);
             foreach (string word in wordString.Split(' '))
             {
                 if (word != string.Empty)
                 {
-                    if (!stopWords.Any(s => s == word)) Words.Add(new Word(word));
+                    if (!stopWords.Any(s => s == word)) Words.Add(new Word(ws.Stem(word).ToLower()));
                 }
             }
-            wordCount = Words.Count();
             Words = calculator.GetWordFrequencies(Words);
-            Words = calculator.GetWordProbabilities(Words, wordCount);
+            Words = calculator.GetRelativeFrequencies(Words);
         }
 
         private static void AddStopWords()
@@ -54,7 +54,7 @@ namespace PartyAffiliationClassifier
             if (stopWords == null)
             {
                 stopWords = new List<string>();
-                var words = File.ReadAllText("stopwords.txt").Replace("\r\n", " ");
+                string words = File.ReadAllText("stopwords.txt").Replace("\r\n", " ");
                 foreach (string w in words.Split(' '))
                 {
                     stopWords.Add(w);

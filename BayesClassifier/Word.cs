@@ -1,24 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Serialization;
 
 namespace PartyAffiliationClassifier
 {
     [Serializable]
     public class Word
     {
-        public string Key { get; set; }
-        public int Frequency { get; set; }
-        public double ConditionalProbability { get; set; }
 
-        public Word(string key, int frequency, double conditionalProbability)
+        private string m_key;
+        private int _frequency;
+        private double _relativeFrequency;
+        private int _documentFrequency;
+
+        public string Key { get { return m_key; } set { m_key = value; } }
+        public double RelativeFrequency { get { return _relativeFrequency; } set { _relativeFrequency = value; } }
+        public int Frequency { get { return _frequency; } set { _frequency = value; } }
+        public int DocumentFrequency { get { return _documentFrequency; } set { _documentFrequency = value; } }
+
+
+        public Word(string key, int frequency, double relativeFrequency)
         {
             Key = key;
             Frequency = frequency;
-            ConditionalProbability = conditionalProbability;
+            RelativeFrequency = relativeFrequency;
         }
         public Word(string key)
         {
@@ -29,6 +32,10 @@ namespace PartyAffiliationClassifier
 
         }
 
+        public void IncreaseDocumentFrequency()
+        {
+            DocumentFrequency++;
+        }
         public void SetFrequency(int freq)
         {
             Frequency = freq;
@@ -36,7 +43,7 @@ namespace PartyAffiliationClassifier
 
         public void SetProbability(double prob)
         {
-            ConditionalProbability = prob;
+            RelativeFrequency = prob;
         }
     }
 }
