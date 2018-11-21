@@ -11,6 +11,12 @@ namespace PartyAffiliationClassifier
         {
 
         }
+
+        /// <summary>
+        /// Get frequencies for all words in word list
+        /// </summary>
+        /// <param name="words">List of words to get frequencies for</param>
+        /// <returns></returns>
         public List<Word> GetWordFrequencies(List<Word> words)
         {
             Dictionary<string, int> wordFrequencies = new Dictionary<string, int>();

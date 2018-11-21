@@ -6,14 +6,17 @@ using System.IO;
 
 namespace PartyAffiliationClassifier
 {
-    public class UserInteractionHandler
+    public class UserInteractionController
     {
         Network network = new Network();
-        public UserInteractionHandler()
+        public UserInteractionController()
         {
             network = network.GetNetwork();
         }
 
+        /// <summary>
+        /// Main loop for classifier application
+        /// </summary>
         public void Start()
         {
             Start:
@@ -37,6 +40,9 @@ namespace PartyAffiliationClassifier
             goto Start;
         }
 
+        /// <summary>
+        /// Train the network with new data
+        /// </summary>
         public void Train()
         {
             bool validInput = false;
@@ -95,6 +101,9 @@ namespace PartyAffiliationClassifier
 
         }
 
+        /// <summary>
+        /// Classify an unknown document
+        /// </summary>
         public void Classify()
         {
             string[] docs = Directory.GetFiles("UnknownDocs");
@@ -150,7 +159,11 @@ namespace PartyAffiliationClassifier
 
             } while (true);
         }
-
+        /// <summary>
+        /// Assign the party to the document
+        /// </summary>
+        /// <param name="fileName">The name of the file to assign the party to</param>
+        /// <returns></returns>
         public TrainingDoc AssignDocumentParty(string fileName)
         {
             Console.Clear();

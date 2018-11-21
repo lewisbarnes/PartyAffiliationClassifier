@@ -11,12 +11,14 @@ namespace PartyAffiliationClassifier
     [Serializable]
     public class Doc
     {
-        private static WordStemmer ws = new WordStemmer();
-        private string fileName;
-        public string FileName { get { return fileName; } private set { } }
-        private static List<string> stopWords { get; set; }
+        private static WordStemmer _ws = new WordStemmer();
+        private string _fileName;
+        private static Calculator _calculator = new Calculator();
+        private static List<string> _stopWords { get; set; }
+
+        public string FileName { get { return _fileName; } private set { } }
         public List<Word> Words { get; set; }
-        private static Calculator calculator = new Calculator();
+        
         public Doc()
         {
 
@@ -24,11 +26,12 @@ namespace PartyAffiliationClassifier
 
         public Doc(string fileName)
         {
-            if (stopWords == null)
+            _fileName = fileName;
+
+            if (_stopWords == null)
             {
                 AddStopWords();
             }
-            this.fileName = fileName;
 
             Words = new List<Word>();
 
@@ -38,26 +41,33 @@ namespace PartyAffiliationClassifier
             sc.RemovePunctuation(ref wordString);
 
             wordString = wordString.Replace("\0", string.Empty);
+
             foreach (string word in wordString.Split(' '))
             {
                 if (word != string.Empty)
                 {
-                    if (!stopWords.Any(s => s == word)) Words.Add(new Word(ws.Stem(word).ToLower()));
+                    // All words not in stopwords, stem word and add to list
+                    if (!_stopWords.Any(s => s == word)) Words.Add(new Word(_ws.Stem(word).ToLower()));
                 }
             }
-            Words = calculator.GetWordFrequencies(Words);
-            Words = calculator.GetRelativeFrequencies(Words);
+
+            Words = _calculator.GetWordFrequencies(Words);
+            Words = _calculator.GetRelativeFrequencies(Words);
         }
 
+        /// <summary>
+        /// Add all of the stopwords to the list from file.
+        /// </summary>
         private static void AddStopWords()
         {
-            if (stopWords == null)
+            // If stopwords does not exist, add all stopwords to list from file
+            if (_stopWords == null)
             {
-                stopWords = new List<string>();
+                _stopWords = new List<string>();
                 string words = File.ReadAllText("stopwords.txt").Replace("\r\n", " ");
                 foreach (string w in words.Split(' '))
                 {
-                    stopWords.Add(w);
+                    _stopWords.Add(w);
                 }
             }
         }

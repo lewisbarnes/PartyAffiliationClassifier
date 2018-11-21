@@ -9,7 +9,7 @@ namespace PartyAffiliationClassifier
             Console.Title = "Party Affiliation Classifier";
             Console.CursorVisible = false;
             //Instantiate new UserInteractionMenu object and Start
-            new UserInteractionHandler().Start();
+            new UserInteractionController().Start();
         }
     }
 }

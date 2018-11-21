@@ -13,7 +13,7 @@ namespace PartyAffiliationClassifier
 
         public int TotalDocs { get { return Data.Sum(x => x.DocCount); } }
         [NonSerialized]
-        private Calculator calculator = new Calculator();
+        private Calculator _calculator = new Calculator();
         public Network(int isnew)
         {
             Data = new List<PartyData>() { new ConservativeData(), new CoalitionData(), new LabourData() };
@@ -62,8 +62,8 @@ namespace PartyAffiliationClassifier
         {
             Category cat = trainingDoc.Category;
             PartyData partyData = Data.Where(x => x.GetCategory() == cat).First();
-            partyData.DocCount++;
-            Dictionary<Category, double> priorProbabilities = calculator.GetPriorProbabilities(Data);
+            partyData.IncrementDocCount();
+            Dictionary<Category, double> priorProbabilities = _calculator.GetPriorProbabilities(Data);
             foreach (KeyValuePair<Category, double> kvp in priorProbabilities)
             {
                 if (kvp.Key != Category.NONE)
@@ -73,7 +73,7 @@ namespace PartyAffiliationClassifier
                 }
             }
             partyData.SetWords(MergeWords(partyData.Words, trainingDoc.Words));
-            calculator.GetRelativeFrequencies(partyData.Words);
+            _calculator.GetRelativeFrequencies(partyData.Words);
             Save();
         }
 
@@ -82,9 +82,11 @@ namespace PartyAffiliationClassifier
         /// </summary>
         private void Save()
         {
+            XmlSerializer serializer = new XmlSerializer(typeof(Network));
+
             using (Stream stream = File.Open(Directory.GetCurrentDirectory() + "\\trainingNetwork.xml", FileMode.Create))
             {
-                XmlSerializer serializer = new XmlSerializer(typeof(Network));
+                
                 serializer.Serialize(stream, this);
             }
         }

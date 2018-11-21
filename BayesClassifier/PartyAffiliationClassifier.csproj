@@ -42,28 +42,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Calculator.cs" />
-    <Compile Include="ClassificationResults.cs" />
-    <Compile Include="CoalitionData.cs" />
-    <Compile Include="ConservativeData.cs" />
-    <Compile Include="Doc.cs" />
-    <Compile Include="LabourData.cs" />
+    <Compile Include="Helpers\Calculator.cs" />
+    <Compile Include="Models\ClassificationResults.cs" />
+    <Compile Include="Models\CoalitionData.cs" />
+    <Compile Include="Models\ConservativeData.cs" />
+    <Compile Include="Models\Doc.cs" />
+    <Compile Include="Models\LabourData.cs" />
     <Compile Include="Network.cs" />
-    <Compile Include="PartyData.cs" />
+    <Compile Include="Models\PartyData.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="StringScanner.cs" />
-    <Compile Include="TrainingDoc.cs" />
-    <Compile Include="UserInteractionMenu.cs" />
-    <Compile Include="Word.cs" />
-    <Compile Include="WordStemmer.cs" />
+    <Compile Include="Helpers\StringScanner.cs" />
+    <Compile Include="Models\TrainingDoc.cs" />
+    <Compile Include="UserInteractionController.cs" />
+    <Compile Include="Models\Word.cs" />
+    <Compile Include="Helpers\WordStemmer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Scripts\MicrosoftAjax.debug.js" />
-    <Content Include="Scripts\MicrosoftAjax.js" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -10,31 +10,42 @@ namespace PartyAffiliationClassifier
     [Serializable]
     public abstract class PartyData
     {
-        public List<Word> Words { get; set; }
-        public double Probability { get; set; }
+        
+        private List<Word> _words;
+        private double _probability;
+        private int _docCount;
 
-        public int DocCount { get; set; }
+        public List<Word> Words { get { return _words; } private set { } }
+        public double Probability { get { return _probability; } private set { } }
+        public int DocCount { get { return _docCount; } private set { } }
+
         public virtual Category GetCategory()
         {
             return Category.NONE;
         }
+
         protected PartyData()
         {
         }
 
         protected PartyData(List<Word> words)
         {
-            Words = words;
+            _words = words;
         }
 
         public void SetWords(List<Word> words)
         {
-            Words = words;
+            _words = words;
         }
 
-        public void SetProbability(double prob)
+        public void SetProbability(double probability)
         {
-            Probability = prob;
+            _probability = probability;
+        }
+
+        public void IncrementDocCount()
+        {
+            _docCount++;
         }
     }
 }

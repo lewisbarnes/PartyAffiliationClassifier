@@ -15,7 +15,10 @@ namespace PartyAffiliationClassifier
     [Serializable]
     public class TrainingDoc : Doc
     {
-        public Category Category;
+        
+        private Category _category;
+
+        public Category Category { get { return _category; } private set { } }
 
         public TrainingDoc()
         {
@@ -24,7 +27,7 @@ namespace PartyAffiliationClassifier
 
         public TrainingDoc(string fileName, Category category) : base(fileName)
         {
-            Category = category;
+            _category = category;
         }
     }
 
