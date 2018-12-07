@@ -73,14 +73,15 @@ namespace PartyAffiliationClassifier
                 }
             }
             partyData.SetWords(MergeWords(partyData.Words, trainingDoc.Words));
+            partyData.SetNGrams(MergeWords(partyData.NGrams, trainingDoc.NGrams));
             _calculator.GetRelativeFrequencies(partyData.Words);
-            Save();
+            _calculator.GetRelativeFrequencies(partyData.NGrams);
         }
 
         /// <summary>
         /// Save the network to file in its current state
         /// </summary>
-        private void Save()
+        public void Save()
         {
             XmlSerializer serializer = new XmlSerializer(typeof(Network));
 
@@ -95,9 +96,12 @@ namespace PartyAffiliationClassifier
         /// </summary>
         /// <param name="doc">The unknown document to classify</param>
         /// <returns>Category of document based on prior knowledge</returns>
-        public ClassificationResults ClassifyUnknownDocument(Doc doc)
+        public Dictionary<string,ClassificationResults> ClassifyUnknownDocument(Doc doc)
         {
+            Dictionary<string, ClassificationResults> returnResults = new Dictionary<string, ClassificationResults>();
             Dictionary<Category, double> overallProbs = new Dictionary<Category, double>();
+            Dictionary<Category, double> overallProbsNGrams = new Dictionary<Category, double>();
+            Dictionary<Category, double> overallProbsTfIdf = new Dictionary<Category, double>();
             foreach (PartyData p in Data)
             {
                 foreach (Word word in doc.Words)
@@ -112,16 +116,62 @@ namespace PartyAffiliationClassifier
                         else
                         {
                             overallProbs[p.GetCategory()] = Math.Log(match.RelativeFrequency);
-                            overallProbs[p.GetCategory()] += Math.Log(p.Probability);
+                           
                         }
                     }
                 }
+                overallProbs[p.GetCategory()] += Math.Log(p.Probability);
+
+                foreach (Word ngram in doc.NGrams)
+                {
+                    Word match = p.NGrams.Where(x => x.Key == ngram.Key).FirstOrDefault();
+                    if (match != null)
+                    {
+                        if (overallProbsNGrams.TryGetValue(p.GetCategory(), out double prob))
+                        {
+                            overallProbsNGrams[p.GetCategory()] = prob + Math.Log(match.RelativeFrequency);
+                        }
+                        else
+                        {
+                            overallProbsNGrams[p.GetCategory()] = Math.Log(match.RelativeFrequency);
+                        }
+                    }
+                }
+                overallProbsNGrams[p.GetCategory()] += Math.Log(p.Probability);
+
+                foreach (Word word in doc.Words)
+                {
+                    Word match = p.Words.Where(x => x.Key == word.Key).FirstOrDefault();
+                    if (match != null)
+                    {
+                        if (overallProbsTfIdf.TryGetValue(p.GetCategory(), out double prob))
+                        {
+                            overallProbsTfIdf[p.GetCategory()] = prob + Math.Log(match.Frequency * (TotalDocs / match.DocumentFrequency));
+                        }
+                        else
+                        {
+                            overallProbsTfIdf[p.GetCategory()] = Math.Log(match.Frequency * (TotalDocs / match.DocumentFrequency));
+                        }
+                    }
+                }
+                overallProbsTfIdf[p.GetCategory()] += Math.Log(p.Probability);
             }
             ClassificationResults results = new ClassificationResults();
+            ClassificationResults nGramResults = new ClassificationResults();
+            ClassificationResults tfIdfResults = new ClassificationResults();
             results.SetConservativePercentage(((overallProbs.Where(x => x.Key == Category.CONSERVATIVE).FirstOrDefault().Value * -1) / overallProbs.Sum(x => x.Value) * -1) * 100);
             results.SetCoalitionPercentage(((overallProbs.Where(x => x.Key == Category.COALITION).FirstOrDefault().Value * -1) / overallProbs.Sum(x => x.Value) * -1) * 100);
             results.SetLabourPercentage(((overallProbs.Where(x => x.Key == Category.LABOUR).FirstOrDefault().Value * -1) / overallProbs.Sum(x => x.Value) * -1) * 100);
-            return results;
+            nGramResults.SetConservativePercentage(((overallProbsNGrams.Where(x => x.Key == Category.CONSERVATIVE).FirstOrDefault().Value * -1) / overallProbsNGrams.Sum(x => x.Value) * -1) * 100);
+            nGramResults.SetCoalitionPercentage(((overallProbsNGrams.Where(x => x.Key == Category.COALITION).FirstOrDefault().Value * -1) / overallProbsNGrams.Sum(x => x.Value) * -1) * 100);
+            nGramResults.SetLabourPercentage(((overallProbsNGrams.Where(x => x.Key == Category.LABOUR).FirstOrDefault().Value * -1) / overallProbsNGrams.Sum(x => x.Value) * -1) * 100);
+            tfIdfResults.SetConservativePercentage(((overallProbsTfIdf.Where(x => x.Key == Category.CONSERVATIVE).FirstOrDefault().Value * -1) / overallProbsTfIdf.Sum(x => x.Value) * -1) * 100);
+            tfIdfResults.SetCoalitionPercentage(((overallProbsTfIdf.Where(x => x.Key == Category.COALITION).FirstOrDefault().Value * -1) / overallProbsTfIdf.Sum(x => x.Value) * -1) * 100);
+            tfIdfResults.SetLabourPercentage(((overallProbsTfIdf.Where(x => x.Key == Category.LABOUR).FirstOrDefault().Value * -1) / overallProbsTfIdf.Sum(x => x.Value) * -1) * 100);
+            returnResults["normal"] = results;
+            returnResults["ngram"] = nGramResults;
+            returnResults["tfidf"] = tfIdfResults;
+            return returnResults;
         }
 
         /// <summary>
@@ -143,6 +193,7 @@ namespace PartyAffiliationClassifier
             {
                 Word first = group.FirstOrDefault();
                 first.SetFrequency(group.Sum(x => x.Frequency));
+                first.DocumentFrequency = group.Sum(x => x.DocumentFrequency);
                 returnWords.Add(first);
             }
 

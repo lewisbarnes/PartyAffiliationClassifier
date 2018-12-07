@@ -1,10 +1,10 @@
-﻿using System.Linq;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
 namespace PartyAffiliationClassifier
 {
     public class WordStemmer
     {
-
+        // Implements algorithm http://snowball.tartarus.org/algorithms/english/stemmer.html
         private readonly char[] _alphabet = Enumerable.Range('a', 'z' - 'a' + 1).Select(c => (char)c).Concat(new[] { '\'' }).ToArray();
         private readonly char[] _vowels = "aeiouy".ToArray();
         private readonly string[] _doubles = { "bb", "dd", "ff", "gg", "mm", "nn", "pp", "rr", "tt" };
@@ -16,6 +16,7 @@ namespace PartyAffiliationClassifier
 
         public string[] Doubles { get { return _doubles; } }
 
+        // Special cases that do not stem as expected
         public readonly Dictionary<string, string> _exceptions = new Dictionary<string, string>()
         {
             {"skis", "ski"},
@@ -91,8 +92,6 @@ namespace PartyAffiliationClassifier
             return word;
 
         }
-
-
 
         private static string TrimStartingApostrophe(string word)
         {
@@ -420,6 +419,7 @@ namespace PartyAffiliationClassifier
 
         public string Step5RemoveEorLSuffixes(string word, int r1, int r2)
         {
+            // Remove 'e' if suffix in R1 or R2 and not ending in short syllable
             if (word.EndsWith("e") &&
                 (SuffixInR2(word, r2, "e") ||
                     (SuffixInR1(word, r1, "e") &&
@@ -427,7 +427,7 @@ namespace PartyAffiliationClassifier
             {
                 return ReplaceSuffix(word, "e");
             }
-
+            // Remove 'l' if suffix in R2 and word length greater than one
             if (word.EndsWith("l") &&
                 SuffixInR2(word, r2, "l") &&
                 word.Length > 1 &&
@@ -435,11 +435,10 @@ namespace PartyAffiliationClassifier
             {
                 return ReplaceSuffix(word, "l");
             }
-
             return word;
         }
-
-        private static string ReplaceSuffix(string word, string oldSuffix, string newSuffix = null)
+        // Replace suffix in string with new provided suffix
+        private string ReplaceSuffix(string word, string oldSuffix, string newSuffix = null)
         {
             if (oldSuffix != null)
             {
@@ -453,7 +452,7 @@ namespace PartyAffiliationClassifier
             return word;
         }
 
-        private static bool TryReplace(string word, string oldSuffix, string newSuffix, out string final)
+        private bool TryReplace(string word, string oldSuffix, string newSuffix, out string final)
         {
             if (word.Contains(oldSuffix))
             {

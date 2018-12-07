@@ -6,12 +6,12 @@ namespace PartyAffiliationClassifier
     public class Word
     {
 
-        private string m_key;
+        private string _key;
         private int _frequency;
         private double _relativeFrequency;
         private int _documentFrequency;
 
-        public string Key { get { return m_key; } set { m_key = value; } }
+        public string Key { get { return _key; } set { _key = value; } }
         public double RelativeFrequency { get { return _relativeFrequency; } set { _relativeFrequency = value; } }
         public int Frequency { get { return _frequency; } set { _frequency = value; } }
         public int DocumentFrequency { get { return _documentFrequency; } set { _documentFrequency = value; } }
@@ -22,10 +22,12 @@ namespace PartyAffiliationClassifier
             Key = key;
             Frequency = frequency;
             RelativeFrequency = relativeFrequency;
+            _documentFrequency = 1;
         }
         public Word(string key)
         {
             Key = key;
+            _documentFrequency = 1;
         }
         public Word()
         {

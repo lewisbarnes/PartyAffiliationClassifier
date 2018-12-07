@@ -8,10 +8,10 @@ namespace PartyAffiliationClassifier
 {
     public class UserInteractionController
     {
-        Network network = new Network();
+        private Network _network = new Network();
         public UserInteractionController()
         {
-            network = network.GetNetwork();
+            _network = _network.GetNetwork();
         }
 
         /// <summary>
@@ -19,11 +19,14 @@ namespace PartyAffiliationClassifier
         /// </summary>
         public void Start()
         {
+            ConsoleKey choiceInput;
             Start:
             Console.Clear();
-            Console.Write("Party Affiliation Classifier\n\nChoose an option from the menu below\n\n1. Train\n2. Classify\n\n" +
-                "You can hit the escape key to exit\n\nHit the desired number key");
-            switch (Console.ReadKey(false).Key)
+            Console.WriteLine("Party Affiliation Classifier\n\nChoose an option from the menu below\n\n1. Train\n2. Classify\n\n" +
+                "You can hit the escape key to exit");
+            Console.Write("Enter your choice: ");
+            choiceInput = Console.ReadKey().Key;
+            switch (choiceInput)
             {
                 case ConsoleKey.D1:
                     Train();
@@ -43,8 +46,12 @@ namespace PartyAffiliationClassifier
         /// <summary>
         /// Train the network with new data
         /// </summary>
-        public void Train()
+        private void Train()
         {
+            StartTraining: 
+            string docChoice;
+            ConsoleKey choiceInput;
+            int choice;
             bool validInput = false;
             TrainingDoc t = new TrainingDoc();
             do
@@ -67,17 +74,18 @@ namespace PartyAffiliationClassifier
                 {
                     Console.WriteLine($"{pair.Key}. {pair.Value}");
                 }
-
-                string choiceInput = Console.ReadLine();
-
+                Console.Write("Choose an option (Type 00 to go back): ");
+                docChoice = Console.ReadLine();
+                if (docChoice == "00") return;
                 try
                 {
-                    int choice = Convert.ToInt32(choiceInput);
+                    choice = Convert.ToInt32(docChoice);
 
                     if (trainingDocPairs.TryGetValue(choice, out string value))
                     {
                         validInput = true;
                         t = AssignDocumentParty(value);
+                        if (t == null) goto StartTraining;
                     }
                     else
                     {
@@ -92,10 +100,26 @@ namespace PartyAffiliationClassifier
                 }
             } while (!validInput);
 
-            network.AddTrainingDoc(t);
+            _network.AddTrainingDoc(t);
 
             Console.WriteLine("Trained Network with \"{0}\"", t.FileName);
             Console.ReadLine();
+            Console.Clear();
+        SavePrompt:
+            Console.WriteLine("Save the network to file?");
+            Console.WriteLine("1. Yes\n2. No\nHit enter after you have made your choice");
+            choiceInput = Console.ReadKey().Key;
+            switch (choiceInput)
+            {
+                case ConsoleKey.D1:
+                    _network.Save();
+                    Classify();
+                    break;
+                case ConsoleKey.D2:
+                    goto StartTraining;
+                default:
+                    goto SavePrompt;
+            }
 
             return;
 
@@ -104,7 +128,7 @@ namespace PartyAffiliationClassifier
         /// <summary>
         /// Classify an unknown document
         /// </summary>
-        public void Classify()
+        private void Classify()
         {
             string[] docs = Directory.GetFiles("UnknownDocs");
             Dictionary<int, string> unknownDocPairs = new Dictionary<int, string>();
@@ -112,9 +136,11 @@ namespace PartyAffiliationClassifier
             string choice;
             int menuChoice;
 
-            if (network.TotalDocs == 0)
+            if (_network.TotalDocs == 0)
             {
-                Console.WriteLine("Cannot classify document without training data, must train network first");
+                Console.Clear();
+                Console.WriteLine("Cannot classify documents without training data, please train network first");
+                Console.ReadLine();
                 Start();
             }
 
@@ -131,22 +157,35 @@ namespace PartyAffiliationClassifier
                     Console.WriteLine($"{pair.Key}. {pair.Value}");
                 }
 
-                Console.Write("\nChoose a document by entering its number: ");
+                Console.Write("\nChoose a document by entering its number (Type 00 to go back): ");
                 choice = Console.ReadLine();
-
-
-
+                if (choice == "00") return;
                 try
                 {
                     menuChoice = Convert.ToInt32(choice);
 
                     if (unknownDocPairs.TryGetValue(menuChoice, out string value))
                     {
+                        Console.Clear();
+                        Console.WriteLine($"Classifying {value}\n");
                         Doc doc = new Doc($"UnknownDocs\\{value}");
-                        ClassificationResults result = network.ClassifyUnknownDocument(doc);
-                        double[] percentages = new double[] { result.GetPartyPercentage(Category.CONSERVATIVE), result.GetPartyPercentage(Category.COALITION), result.GetPartyPercentage(Category.LABOUR) };
-                        percentages = percentages.OrderByDescending(x => x).ToArray();
-                        Console.WriteLine($"\nClassified as {ti.ToTitleCase(result.MostLikely.ToString().ToLower())} Party - {result.GetPartyPercentage(result.MostLikely):f2}%");
+                        Dictionary<string,ClassificationResults> results = _network.ClassifyUnknownDocument(doc);
+                        Console.WriteLine($"\nClassified as {ti.ToTitleCase(results["normal"].MostLikely.ToString().ToLower())} Party - {results["normal"].GetPartyPercentage(results["normal"].MostLikely):f2}% certainty using word stemming and removing stopwords");
+                        foreach(KeyValuePair<Category,double> r in results["normal"].GetOthers)
+                        {
+                            Console.WriteLine($"{ti.ToTitleCase(r.Key.ToString().ToLower())} - {r.Value:f2}% certainty");
+                        }
+                        Console.WriteLine($"\nClassified as {ti.ToTitleCase(results["ngram"].MostLikely.ToString().ToLower())} Party - {results["ngram"].GetPartyPercentage(results["ngram"].MostLikely):f2}% certainty using word-level trigrams");
+                        foreach (KeyValuePair<Category, double> r in results["ngram"].GetOthers)
+                        {
+                            Console.WriteLine($"{ti.ToTitleCase(r.Key.ToString().ToLower())} - {r.Value:f2}% certainty");
+                        }
+                        Console.WriteLine($"\nClassified as {ti.ToTitleCase(results["tfidf"].MostLikely.ToString().ToLower())} Party - {results["tfidf"].GetPartyPercentage(results["tfidf"].MostLikely):f2}% certainty using TF-IDF");
+                        foreach (KeyValuePair<Category, double> r in results["tfidf"].GetOthers)
+                        {
+                            Console.WriteLine($"{ti.ToTitleCase(r.Key.ToString().ToLower())} - {r.Value:f2}% certainty");
+                        }
+                        doc.Dispose();
                     }
                 }
                 catch (FormatException e)
@@ -154,7 +193,6 @@ namespace PartyAffiliationClassifier
                     Console.WriteLine(e.Message + " Try a number instead!");
                     Console.ReadLine();
                 }
-
                 Console.ReadLine();
 
             } while (true);
@@ -164,35 +202,38 @@ namespace PartyAffiliationClassifier
         /// </summary>
         /// <param name="fileName">The name of the file to assign the party to</param>
         /// <returns></returns>
-        public TrainingDoc AssignDocumentParty(string fileName)
+        private TrainingDoc AssignDocumentParty(string fileName)
         {
+            ConsoleKey choiceInput;
+            int choice;
             Console.Clear();
-            TrainingDoc t = new TrainingDoc();
-            Console.WriteLine("Choose the party this document belongs to\n\nYou can hit the escape key to go back");
+            TrainingDoc td = new TrainingDoc();
+            Console.WriteLine("Choose the party this document belongs to:\n");
             Dictionary<int, Category> categoryPairs = new Dictionary<int, Category>() { { 1, Category.CONSERVATIVE }, { 2, Category.COALITION }, { 3, Category.LABOUR } };
             foreach (KeyValuePair<int, Category> pair in categoryPairs)
             {
                 Console.WriteLine($"{pair.Key}. {pair.Value}");
             }
-            switch (Console.ReadKey().Key)
+            Console.Write("Enter an option: ");
+            choiceInput = Console.ReadKey().Key;
+            switch (choiceInput)
             {
                 case ConsoleKey.D1:
-                    t = new TrainingDoc(fileName, Category.CONSERVATIVE);
+                    td = new TrainingDoc(fileName, Category.CONSERVATIVE);
                     break;
                 case ConsoleKey.D2:
-                    t = new TrainingDoc(fileName, Category.COALITION);
+                    td = new TrainingDoc(fileName, Category.COALITION);
                     break;
                 case ConsoleKey.D3:
-                    t = new TrainingDoc(fileName, Category.LABOUR);
+                    td = new TrainingDoc(fileName, Category.LABOUR);
                     break;
                 case ConsoleKey.Escape:
-                    Train();
-                    break;
+                    return null;
                 default:
                     Console.WriteLine("Invalid Input!");
                     break;
             }
-            return t;
+            return td;
         }
 
 

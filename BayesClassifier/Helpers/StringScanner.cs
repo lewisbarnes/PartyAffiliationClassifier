@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
+using System.Text;
 
 namespace PartyAffiliationClassifier
 {
@@ -13,7 +10,7 @@ namespace PartyAffiliationClassifier
         {
         }
 
-        public string RemovePunctuation(ref string inputString)
+        public void RemovePunctuation(ref string inputString)
         {
             StringBuilder sb = new StringBuilder(inputString.ToLower()); //New string builder containing input string lowercase
             StringReader reader = new StringReader(inputString.ToLower());//New string reader containing input string lowercase
@@ -45,7 +42,7 @@ namespace PartyAffiliationClassifier
                 }
                 charPos++; //Increment the char position counter
             }
-            return inputString = sb.ToString(); // Return the StringBuilder.ToString();
+            inputString = sb.ToString(); // Return the StringBuilder.ToString();
         }
     }
 }

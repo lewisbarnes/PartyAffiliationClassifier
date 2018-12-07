@@ -1,21 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PartyAffiliationClassifier
 {
     public class ClassificationResults
     {
         private Dictionary<Category, double> _probabilityPercentages;
-        private double _coalitionPercentage;
-        private double _conservativePercentage;
-        private double _labourPercentage;
+        private double _coalitionPercentage = 0;
+        private double _conservativePercentage = 0;
+        private double _labourPercentage = 0;
         public double ConservativePercentage { get { return _conservativePercentage; } private set { } }
         public double CoalitionPercentage { get { return _coalitionPercentage; } private set { } }
         public double LabourPercentage { get { return _labourPercentage; } private set { } }
         public Category MostLikely { get { return _probabilityPercentages.OrderByDescending(x => x.Value).FirstOrDefault().Key; } }
+        public Dictionary<Category,double> GetOthers { get { return _probabilityPercentages.Where(x => x.Key != MostLikely).OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value); } }
 
         public ClassificationResults()
         {

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 namespace PartyAffiliationClassifier
 {
     public class Calculator
@@ -41,7 +39,6 @@ namespace PartyAffiliationClassifier
         }
 
         public List<Word> GetRelativeFrequencies(List<Word> words)
-
         {
             List<Word> returnWords = new List<Word>();
             foreach (Word word in words)

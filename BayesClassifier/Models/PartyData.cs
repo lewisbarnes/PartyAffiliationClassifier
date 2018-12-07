@@ -12,12 +12,14 @@ namespace PartyAffiliationClassifier
     {
         
         private List<Word> _words;
+        private List<Word> _nGrams;
         private double _probability;
         private int _docCount;
 
-        public List<Word> Words { get { return _words; } private set { } }
-        public double Probability { get { return _probability; } private set { } }
-        public int DocCount { get { return _docCount; } private set { } }
+        public List<Word> Words { get { return _words; } set { _words = value; } }
+        public List<Word> NGrams { get { return _nGrams; } set { _nGrams = value; } }
+        public double Probability { get { return _probability; } set { _probability = value; } }
+        public int DocCount { get { return _docCount; } set { _docCount = value; } }
 
         public virtual Category GetCategory()
         {
@@ -38,6 +40,10 @@ namespace PartyAffiliationClassifier
             _words = words;
         }
 
+        public void SetNGrams(List<Word> nGrams)
+        {
+            _nGrams = nGrams;
+        }
         public void SetProbability(double probability)
         {
             _probability = probability;
