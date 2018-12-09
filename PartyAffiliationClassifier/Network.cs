@@ -9,15 +9,27 @@ namespace PartyAffiliationClassifier
     [Serializable]
     public class Network
     {
+        // Training set data
         public List<PartyData> Data { get; set; }
+        
 
+        // Return the total number of documents in the training set
         public int TotalDocs { get { return Data.Sum(x => x.DocCount); } }
         [NonSerialized]
         private Calculator _calculator = new Calculator();
+
+        /// <summary>
+        /// Create a new network with isnew specifying if the network is a new network
+        /// </summary>
+        /// <param name="isnew">Specifies if a new network is to be created</param>
         public Network(int isnew)
         {
             Data = new List<PartyData>() { new ConservativeData(), new CoalitionData(), new LabourData() };
         }
+        /// <summary>
+        /// Check if the network has already been created
+        /// </summary>
+        /// <returns></returns>
         private bool NetworkExists()
         {
             return Directory.GetFiles(Directory.GetCurrentDirectory()).Contains(Directory.GetCurrentDirectory()+@"\trainingNetwork.xml");
@@ -61,8 +73,10 @@ namespace PartyAffiliationClassifier
         public void AddTrainingDoc(TrainingDoc trainingDoc)
         {
             Category cat = trainingDoc.Category;
+            // Get partyData of same category as the TrainingDoc
             PartyData partyData = Data.Where(x => x.GetCategory() == cat).First();
             partyData.IncrementDocCount();
+            // Recalculate prior probabilities as document count has changed
             Dictionary<Category, double> priorProbabilities = _calculator.GetPriorProbabilities(Data);
             foreach (KeyValuePair<Category, double> kvp in priorProbabilities)
             {
@@ -72,8 +86,11 @@ namespace PartyAffiliationClassifier
                     party.SetProbability(kvp.Value);
                 }
             }
+            // Merge the existing word set with the new document word set
             partyData.SetWords(MergeWords(partyData.Words, trainingDoc.Words));
+            // Merge the existing ngram set with the new document ngram set
             partyData.SetNGrams(MergeWords(partyData.NGrams, trainingDoc.NGrams));
+            // Recalculate relative frequencies as training set has been modified
             _calculator.GetRelativeFrequencies(partyData.Words);
             _calculator.GetRelativeFrequencies(partyData.NGrams);
         }
@@ -84,10 +101,10 @@ namespace PartyAffiliationClassifier
         public void Save()
         {
             XmlSerializer serializer = new XmlSerializer(typeof(Network));
-
+            // Create a new file with the specified name
             using (Stream stream = File.Open(Directory.GetCurrentDirectory() + "\\trainingNetwork.xml", FileMode.Create))
             {
-                
+                // Serialize network to file
                 serializer.Serialize(stream, this);
             }
         }
@@ -104,6 +121,7 @@ namespace PartyAffiliationClassifier
             Dictionary<Category, double> overallProbsTfIdf = new Dictionary<Category, double>();
             foreach (PartyData p in Data)
             {
+                // Calculate probability using words from document
                 foreach (Word word in doc.Words)
                 {
                     Word match = p.Words.Where(x => x.Key == word.Key).FirstOrDefault();
@@ -120,8 +138,10 @@ namespace PartyAffiliationClassifier
                         }
                     }
                 }
+                
                 overallProbs[p.GetCategory()] += Math.Log(p.Probability);
 
+                // Calculate probability, this time using N-Grams not words.
                 foreach (Word ngram in doc.NGrams)
                 {
                     Word match = p.NGrams.Where(x => x.Key == ngram.Key).FirstOrDefault();
@@ -139,6 +159,7 @@ namespace PartyAffiliationClassifier
                 }
                 overallProbsNGrams[p.GetCategory()] += Math.Log(p.Probability);
 
+                // Same as above, instead using inverse document frequency instead of relative frequency
                 foreach (Word word in doc.Words)
                 {
                     Word match = p.Words.Where(x => x.Key == word.Key).FirstOrDefault();
@@ -156,29 +177,37 @@ namespace PartyAffiliationClassifier
                 }
                 overallProbsTfIdf[p.GetCategory()] += Math.Log(p.Probability);
             }
+            // Create results object and set all relevant variables
             ClassificationResults results = new ClassificationResults();
             ClassificationResults nGramResults = new ClassificationResults();
             ClassificationResults tfIdfResults = new ClassificationResults();
+
+            // Calculate percentages of certainty
             results.SetConservativePercentage(((overallProbs.Where(x => x.Key == Category.CONSERVATIVE).FirstOrDefault().Value * -1) / overallProbs.Sum(x => x.Value) * -1) * 100);
             results.SetCoalitionPercentage(((overallProbs.Where(x => x.Key == Category.COALITION).FirstOrDefault().Value * -1) / overallProbs.Sum(x => x.Value) * -1) * 100);
             results.SetLabourPercentage(((overallProbs.Where(x => x.Key == Category.LABOUR).FirstOrDefault().Value * -1) / overallProbs.Sum(x => x.Value) * -1) * 100);
+
             nGramResults.SetConservativePercentage(((overallProbsNGrams.Where(x => x.Key == Category.CONSERVATIVE).FirstOrDefault().Value * -1) / overallProbsNGrams.Sum(x => x.Value) * -1) * 100);
             nGramResults.SetCoalitionPercentage(((overallProbsNGrams.Where(x => x.Key == Category.COALITION).FirstOrDefault().Value * -1) / overallProbsNGrams.Sum(x => x.Value) * -1) * 100);
             nGramResults.SetLabourPercentage(((overallProbsNGrams.Where(x => x.Key == Category.LABOUR).FirstOrDefault().Value * -1) / overallProbsNGrams.Sum(x => x.Value) * -1) * 100);
+
             tfIdfResults.SetConservativePercentage(((overallProbsTfIdf.Where(x => x.Key == Category.CONSERVATIVE).FirstOrDefault().Value * -1) / overallProbsTfIdf.Sum(x => x.Value) * -1) * 100);
             tfIdfResults.SetCoalitionPercentage(((overallProbsTfIdf.Where(x => x.Key == Category.COALITION).FirstOrDefault().Value * -1) / overallProbsTfIdf.Sum(x => x.Value) * -1) * 100);
             tfIdfResults.SetLabourPercentage(((overallProbsTfIdf.Where(x => x.Key == Category.LABOUR).FirstOrDefault().Value * -1) / overallProbsTfIdf.Sum(x => x.Value) * -1) * 100);
+
+            // Add results to dictionary ready for return
             returnResults["normal"] = results;
             returnResults["ngram"] = nGramResults;
             returnResults["tfidf"] = tfIdfResults;
+
             return returnResults;
         }
 
         /// <summary>
         /// Merge two lists of words together summing the frequency on same keys
         /// </summary>
-        /// <param name="words1"></param>
-        /// <param name="words2"></param>
+        /// <param name="words1">First words list</param>
+        /// <param name="words2">Second words list</param>
         /// <returns></returns>
         private List<Word> MergeWords(List<Word> words1, List<Word> words2)
         {

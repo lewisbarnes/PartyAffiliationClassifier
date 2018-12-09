@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace PartyAffiliationClassifier
 {
+    // Ngram creation algorithm obtained from https://blog.jakemdrew.com/2013/04/23/mapreduce-for-n-grams-using-c/
     public class NGramMaker
     {
         public IEnumerable<string> MakeNGrams(string text, int nGramSize)
